@@ -22,6 +22,8 @@ const dropBuoyBtn = document.getElementById("dropBuoyBtn");
 const declareBtn = document.getElementById("declareBtn");
 const restartBtn = document.getElementById("restartBtn");
 
+const isEmbedded = new URLSearchParams(window.location.search).get('embedded') === 'true';
+
 const WORLD = {
   width: 36,
   height: 24,
