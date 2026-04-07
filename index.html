@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASW Helo Hunt</title>
+  <link rel="stylesheet" href="styles.css?v=20260406-3">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Littoral ASW Trainer</p>
+        <h1>ASW Helo Hunt</h1>
+      </div>
+        <div class="mission-strip">
+        <div class="metric">
+          <span>Buoys Remaining</span>
+          <strong id="buoyCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Linked Buoys</span>
+          <strong id="linkedCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Track Quality</span>
+          <strong id="trackQuality">Searching</strong>
+        </div>
+        <div class="metric">
+          <span>Time Compression</span>
+          <strong id="simRate">x1</strong>
+        </div>
+        <div class="metric">
+          <span>Last Action</span>
+          <strong id="actionReadout">Search</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel map-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Search Plot</p>
+            <h2>Mission Map</h2>
+          </div>
+          <div class="panel-readout" id="heloReadout">HDG 000 / 000 kt</div>
+        </div>
+        <canvas id="mapCanvas" aria-label="Mission map"></canvas>
+        <div class="legend">
+          <span><i class="swatch helo"></i> Helo</span>
+          <span><i class="swatch buoy"></i> Datalinked buoy</span>
+          <span><i class="swatch return"></i> Active range return</span>
+          <span><i class="swatch estimate"></i> Estimated sub position</span>
+        </div>
+      </section>
+
+      <section class="sidebar">
+        <section class="panel sonar-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Acoustic Picture</p>
+              <h2>Sonar / PPI</h2>
+            </div>
+            <div class="panel-readout" id="rangeReadout">Link radius 8.0 nm</div>
+          </div>
+          <canvas id="sonarCanvas" aria-label="Sonar situation display"></canvas>
+          <p class="sonar-caption">Only buoys inside your datalink basket appear here. Their active sonar rings and range returns are drawn relative to your helicopter.</p>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Crew Actions</p>
+              <h2>Controls</h2>
+            </div>
+          </div>
+          <div class="controls-grid">
+            <button id="dropBuoyBtn" class="action primary">Drop Buoy [Space]</button>
+            <button id="declareBtn" class="action">Declare Contact [Enter]</button>
+            <button id="restartBtn" class="action">New Hunt [R]</button>
+          </div>
+          <div class="control-notes">
+            <p><strong>Fly:</strong> <span>W/S change speed, A/D turn.</span></p>
+            <p><strong>Search idea:</strong> <span>Lay a pattern, re-enter the buoy field, wait for active returns, then use overlapping rings to refine the estimate.</span></p>
+          </div>
+        </section>
+
+        <section class="panel status-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">Mission Status</p>
+              <h2>Plot Notes</h2>
+            </div>
+          </div>
+          <div class="status-grid">
+            <div class="status-card">
+              <span>Position</span>
+              <strong id="positionReadout">0.0 / 0.0</strong>
+            </div>
+            <div class="status-card">
+              <span>Estimate</span>
+              <strong id="estimateReadout">No track</strong>
+            </div>
+            <div class="status-card">
+              <span>Mission Clock</span>
+              <strong id="clockReadout">00:00</strong>
+            </div>
+            <div class="status-card">
+              <span>Contact Age</span>
+              <strong id="contactAgeReadout">None</strong>
+            </div>
+            <div class="status-card">
+              <span>Recent Returns</span>
+              <strong id="returnsReadout">0</strong>
+            </div>
+            <div class="status-card">
+              <span>Declare Status</span>
+              <strong id="declareReadout">Need 2 returns</strong>
+            </div>
+          </div>
+          <div class="message-board">
+            <h3>Acoustic Log</h3>
+            <ul id="messageLog"></ul>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js?v=20260406-3"></script>
+</body>
+</html>
