@@ -1,3 +1,7 @@
+// Embedded mode detection
+if (new URLSearchParams(window.location.search).get('embedded') === 'true') {
+  document.body.classList.add('embedded');
+}
 const mapCanvas = document.getElementById("mapCanvas");
 const sonarCanvas = document.getElementById("sonarCanvas");
 const mapCtx = mapCanvas.getContext("2d");
