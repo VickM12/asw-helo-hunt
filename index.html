@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ASW Helo Hunt</title>
-  <link rel="stylesheet" href="styles.css?v=20260406-3">
+  <link rel="stylesheet" href="styles.css?v=20260407-4">
 </head>
 <body>
   <div class="shell">
@@ -64,36 +64,24 @@
             </div>
             <div class="panel-readout" id="rangeReadout">Link radius 8.0 nm</div>
           </div>
-          <canvas id="sonarCanvas" aria-label="Sonar situation display"></canvas>
-          <p class="sonar-caption">Only buoys inside your datalink basket appear here. Their active sonar rings and range returns are drawn relative to your helicopter.</p>
+          <div class="ppi-wrap">
+            <canvas id="sonarCanvas" aria-label="Sonar situation display"></canvas>
+          </div>
         </section>
 
         <section class="panel controls-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Crew Actions</p>
-              <h2>Controls</h2>
-            </div>
-          </div>
           <div class="controls-grid">
             <button id="dropBuoyBtn" class="action primary">Drop Buoy [Space]</button>
             <button id="declareBtn" class="action">Declare Contact [Enter]</button>
             <button id="restartBtn" class="action">New Hunt [R]</button>
           </div>
           <div class="control-notes">
-            <p><strong>Fly:</strong> <span>W/S change speed, A/D turn.</span></p>
-            <p><strong>Search idea:</strong> <span>Lay a pattern, re-enter the buoy field, wait for active returns, then use overlapping rings to refine the estimate.</span></p>
+            <p><strong>Fly:</strong> W/S speed, A/D turn. <strong>Space</strong> drop buoy. <strong>Enter</strong> declare. <strong>R</strong> restart.</p>
           </div>
         </section>
 
         <section class="panel status-panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">Mission Status</p>
-              <h2>Plot Notes</h2>
-            </div>
-          </div>
-          <div class="status-grid">
+          <div class="status-grid status-grid-compact">
             <div class="status-card">
               <span>Position</span>
               <strong id="positionReadout">0.0 / 0.0</strong>
@@ -103,7 +91,7 @@
               <strong id="estimateReadout">No track</strong>
             </div>
             <div class="status-card">
-              <span>Mission Clock</span>
+              <span>Clock</span>
               <strong id="clockReadout">00:00</strong>
             </div>
             <div class="status-card">
@@ -111,13 +99,17 @@
               <strong id="contactAgeReadout">None</strong>
             </div>
             <div class="status-card">
-              <span>Recent Returns</span>
+              <span>Returns</span>
               <strong id="returnsReadout">0</strong>
             </div>
             <div class="status-card">
-              <span>Declare Status</span>
+              <span>Declare</span>
               <strong id="declareReadout">Need 2 returns</strong>
             </div>
+          </div>
+          <div class="confidence-row">
+            <strong id="confidenceReadout">—</strong>
+            <span class="confidence-hint" id="confidenceHint"></span>
           </div>
           <div class="message-board">
             <h3>Acoustic Log</h3>
@@ -128,6 +120,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260406-3"></script>
+  <script src="app.js?v=20260407-2"></script>
 </body>
 </html>

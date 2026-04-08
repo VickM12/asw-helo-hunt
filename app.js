@@ -16,6 +16,8 @@ const messageLogEl = document.getElementById("messageLog");
 const simRateEl = document.getElementById("simRate");
 const returnsReadoutEl = document.getElementById("returnsReadout");
 const declareReadoutEl = document.getElementById("declareReadout");
+const confidenceReadoutEl = document.getElementById("confidenceReadout");
+const confidenceHintEl = document.getElementById("confidenceHint");
 const actionReadoutEl = document.getElementById("actionReadout");
 
 const dropBuoyBtn = document.getElementById("dropBuoyBtn");
@@ -47,10 +49,12 @@ const CONFIG = {
     sonarRadius: 4.4,
     linkRadius: 8,
     pingInterval: 6.2,
+    guaranteedDetectionInBasket: true,
   },
   solution: {
     freshness: 55,
     successThreshold: 1.1,
+    minDeclareConfidence: 0.52,
   },
   physics: {
     soundSpeedNmPerSec: 0.82,
@@ -89,6 +93,7 @@ function resetGame() {
   pushMessage("brief", "Mission start. A diesel-electric submarine is somewhere in the area. Lay an active buoy pattern and re-enter the field to collect returns.");
   pushMessage("hint", "Only buoys within datalink range show on your sonar display. If you sprint too far from the pattern, you lose the acoustic picture.");
   pushMessage("hint", "Training balance is on: the search box is tighter and buoy baskets are a bit more generous so you can build a track without a perfect barrier.");
+  pushMessage("hint", "Training acoustics are on: if the submarine is inside a buoy's basket, that buoy will return, and solution-fitting rings glow brighter.");
   resizeCanvases();
   updateReadouts();
   render();
@@ -263,7 +268,9 @@ function issuePing(buoy) {
   };
 
   const probability = clamp(0.9 - trueRange / buoy.sonarRadius * 0.35, 0.22, 0.92);
-  const detected = inRange && Math.random() <= probability;
+  const detected = CONFIG.buoy.guaranteedDetectionInBasket
+    ? inRange
+    : inRange && Math.random() <= probability;
 
   if (detected) {
     const transit = trueRange / CONFIG.physics.soundSpeedNmPerSec;
@@ -337,9 +344,14 @@ function registerReturn(ping) {
 }
 
 function updateEstimate() {
+  for (const buoy of state.buoys) {
+    buoy.solutionContributor = false;
+  }
+
   const observations = state.buoys
     .filter((buoy) => buoy.lastReturn && state.time - buoy.lastReturn.time <= CONFIG.solution.freshness)
     .map((buoy) => ({
+      buoyId: buoy.id,
       x: buoy.x,
       y: buoy.y,
       range: buoy.lastReturn.range,
@@ -395,13 +407,26 @@ function updateEstimate() {
   );
   const residual = Math.sqrt(bestCost / observations.length);
   const confidence = clamp((observations.length - 1) * 0.22 + geometrySpread * 0.04 - residual * 0.7, 0.08, 0.98);
+  const fitThreshold = Math.max(0.28, residual * 1.35);
+  const fittedObservations = observations.map((item) => ({
+    ...item,
+    fitError: Math.abs(distance(best, item) - item.range),
+  }));
+
+  for (const item of fittedObservations) {
+    const buoy = state.buoys.find((candidate) => candidate.id === item.buoyId);
+    if (buoy) {
+      buoy.solutionContributor = item.fitError <= fitThreshold;
+    }
+  }
 
   state.estimate = {
     x: best.x,
     y: best.y,
     residual,
     confidence,
-    observations,
+    observations: fittedObservations,
+    fitThreshold,
   };
 }
 
@@ -431,23 +456,53 @@ function updateReadouts() {
   returnsReadoutEl.textContent = String(recentReturns);
   actionReadoutEl.textContent = state.lastAction;
 
+  const minConf = CONFIG.solution.minDeclareConfidence;
+  const minConfPct = Math.round(minConf * 100);
+
   if (!state.estimate) {
     trackQualityEl.textContent = recentReturns === 1 ? "Single buoy" : "Searching";
     estimateReadoutEl.textContent = recentReturns === 1 ? "Need 1 more return" : "No track";
+    confidenceReadoutEl.textContent = "—";
+    confidenceHintEl.textContent =
+      "Confidence shows once two or more buoys have fresh returns. Space buoys so range rings cross from different directions—not in a single line.";
     contactAgeReadoutEl.textContent = "None";
     declareReadoutEl.textContent = recentReturns === 1 ? "Need 1 more return" : "Need 2 returns";
     declareBtn.disabled = true;
   } else {
     const quality = state.estimate.confidence;
+    const pct = Math.round(quality * 100);
     trackQualityEl.textContent =
       quality > 0.72 ? "Weapons tight" :
-      quality > 0.52 ? "Refining" :
+      quality > minConf ? "Refining" :
       "Probable";
     estimateReadoutEl.textContent = `${state.estimate.x.toFixed(1)} / ${state.estimate.y.toFixed(1)} (${state.estimate.residual.toFixed(2)} nm err)`;
+    confidenceReadoutEl.textContent =
+      quality >= minConf ? `${pct}% · meets ${minConfPct}% declare floor` : `${pct}% · need ≥${minConfPct}% to declare`;
     const freshest = Math.min(...state.estimate.observations.map((item) => item.age));
     contactAgeReadoutEl.textContent = `${freshest.toFixed(0)} sec`;
-    declareReadoutEl.textContent = state.estimate.confidence >= 0.52 ? "Ready to declare" : "Weak solution";
+    declareReadoutEl.textContent = quality >= minConf ? "Ready to declare" : "Weak solution";
     declareBtn.disabled = false;
+
+    if (quality >= minConf) {
+      confidenceHintEl.textContent = `Declare also requires the estimate within ${CONFIG.solution.successThreshold.toFixed(1)} nm of the submarine.`;
+    } else {
+      const n = state.estimate.observations.length;
+      const res = state.estimate.residual;
+      const parts = [];
+      if (n <= 2) {
+        parts.push("add a third+ buoy with a fresh return on target");
+      }
+      if (res > 0.45) {
+        parts.push("tighten geometry so measured ranges agree (buoys bracketing the contact, not collinear)");
+      }
+      if (freshest > 28) {
+        parts.push("refresh stale returns—stay datalinked near the field");
+      }
+      if (parts.length === 0) {
+        parts.push("more high-quality crossings and consistent ring fit raise confidence");
+      }
+      confidenceHintEl.textContent = `Raise confidence: ${parts.join("; ")}.`;
+    }
   }
 
   syncMessageLog();
@@ -491,7 +546,8 @@ function drawMap() {
     ctx.stroke();
 
     if (buoy.lastReturn && state.time - buoy.lastReturn.time <= CONFIG.solution.freshness) {
-      ctx.strokeStyle = "rgba(246, 185, 95, 0.34)";
+      ctx.strokeStyle = buoy.solutionContributor ? "rgba(246, 185, 95, 0.78)" : "rgba(246, 185, 95, 0.34)";
+      ctx.lineWidth = buoy.solutionContributor ? 2.8 : 1.8;
       ctx.setLineDash([8, 8]);
       ctx.beginPath();
       ctx.arc(px, py, buoy.lastReturn.range * scaleX, 0, Math.PI * 2);
@@ -501,7 +557,7 @@ function drawMap() {
 
     ctx.fillStyle = buoy.linked ? "#7ce6d4" : "#5a7280";
     ctx.beginPath();
-    ctx.arc(px, py, buoy.linked ? 6 : 4, 0, Math.PI * 2);
+    ctx.arc(px, py, buoy.solutionContributor ? 7.5 : buoy.linked ? 6 : 4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "rgba(217, 238, 248, 0.9)";
@@ -695,7 +751,8 @@ function drawSonar() {
     ctx.stroke();
 
     if (buoy.lastReturn && state.time - buoy.lastReturn.time <= CONFIG.solution.freshness) {
-      ctx.strokeStyle = "rgba(246, 185, 95, 0.5)";
+      ctx.strokeStyle = buoy.solutionContributor ? "rgba(246, 185, 95, 0.86)" : "rgba(246, 185, 95, 0.5)";
+      ctx.lineWidth = buoy.solutionContributor ? 3.2 : 2.2;
       ctx.setLineDash([7, 5]);
       ctx.beginPath();
       ctx.arc(px, py, buoy.lastReturn.range * pixelsPerNm, 0, Math.PI * 2);
@@ -705,7 +762,7 @@ function drawSonar() {
 
     ctx.fillStyle = "#7ce6d4";
     ctx.beginPath();
-    ctx.arc(px, py, 7, 0, Math.PI * 2);
+    ctx.arc(px, py, buoy.solutionContributor ? 8.5 : 7, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "#d9eef8";
@@ -821,11 +878,23 @@ function declareContact() {
   }
 
   const error = distance(state.estimate, state.sub);
-  if (error <= CONFIG.solution.successThreshold && state.estimate.confidence >= 0.52) {
+  const withinRange = error <= CONFIG.solution.successThreshold;
+  const confidentEnough = state.estimate.confidence >= CONFIG.solution.minDeclareConfidence;
+
+  if (withinRange && confidentEnough) {
     state.missionEnded = true;
     state.result = "success";
     state.lastAction = "Contact declared";
     pushMessage("success", `Contact declared. Error ${error.toFixed(2)} nm. Datum confirmed and submarine revealed on the plot.`);
+    updateReadouts();
+  } else if (!confidentEnough && withinRange) {
+    const pct = (state.estimate.confidence * 100).toFixed(0);
+    const need = Math.round(CONFIG.solution.minDeclareConfidence * 100);
+    state.lastAction = "Rejected: weak track";
+    pushMessage(
+      "warning",
+      `Solution rejected. Estimate was ${error.toFixed(2)} nm from the submarine but track confidence is too low (${pct}%, need ${need}%+). See Plot Notes for how to raise confidence.`
+    );
     updateReadouts();
   } else {
     state.lastAction = `Missed by ${error.toFixed(1)} nm`;
