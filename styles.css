@@ -386,3 +386,19 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+/* Embedded mode: single column layout */
+body.embedded .layout {
+  flex-direction: column;
+}
+
+body.embedded .sidebar {
+  width: 100%;
+}
+
+body.embedded .map-panel {
+  width: 100%;
+}
+
+body.embedded .topbar .mission-strip {
+  flex-wrap: wrap;
+}

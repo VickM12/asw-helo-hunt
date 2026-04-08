@@ -1,3 +1,7 @@
+// Embedded mode detection
+if (new URLSearchParams(window.location.search).get('embedded') === 'true') {
+  document.body.classList.add('embedded');
+}
 const mapCanvas = document.getElementById("mapCanvas");
 const sonarCanvas = document.getElementById("sonarCanvas");
 const mapCtx = mapCanvas.getContext("2d");
@@ -23,6 +27,8 @@ const actionReadoutEl = document.getElementById("actionReadout");
 const dropBuoyBtn = document.getElementById("dropBuoyBtn");
 const declareBtn = document.getElementById("declareBtn");
 const restartBtn = document.getElementById("restartBtn");
+
+const isEmbedded = new URLSearchParams(window.location.search).get('embedded') === 'true';
 
 const WORLD = {
   width: 36,
