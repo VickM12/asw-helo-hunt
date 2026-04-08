@@ -141,7 +141,7 @@ function createSubmarine(side) {
 }
 
 function resizeCanvases() {
-  resizeCanvas(mapCanvas, 1600, 1000);
+  resizeCanvas(mapCanvas, 1500, 1000);
   resizeCanvas(sonarCanvas, 900, 900);
 }
 
@@ -173,7 +173,7 @@ function update(dt) {
   const simDt = dt * CONFIG.sim.rate;
 
   state.time += simDt;
-  updateHelo(simDt);
+  updateHelo(dt, simDt);
   updateSub(simDt);
   updateBuoys(simDt);
   updatePingAnimations(simDt);
@@ -182,22 +182,22 @@ function update(dt) {
   updateReadouts();
 }
 
-function updateHelo(dt) {
+function updateHelo(inputDt, simDt) {
   const { helo, keys } = state;
   if (keys.has("KeyA")) {
-    helo.heading -= degToRad(CONFIG.helo.turnRate) * dt;
+    helo.heading -= degToRad(CONFIG.helo.turnRate) * inputDt;
   }
   if (keys.has("KeyD")) {
-    helo.heading += degToRad(CONFIG.helo.turnRate) * dt;
+    helo.heading += degToRad(CONFIG.helo.turnRate) * inputDt;
   }
   if (keys.has("KeyW")) {
-    helo.speed = clamp(helo.speed + CONFIG.helo.accel * dt, CONFIG.helo.minSpeed, CONFIG.helo.maxSpeed);
+    helo.speed = clamp(helo.speed + CONFIG.helo.accel * inputDt, CONFIG.helo.minSpeed, CONFIG.helo.maxSpeed);
   }
   if (keys.has("KeyS")) {
-    helo.speed = clamp(helo.speed - CONFIG.helo.accel * dt, CONFIG.helo.minSpeed, CONFIG.helo.maxSpeed);
+    helo.speed = clamp(helo.speed - CONFIG.helo.accel * inputDt, CONFIG.helo.minSpeed, CONFIG.helo.maxSpeed);
   }
 
-  const travel = knotsToNmPerSec(helo.speed) * dt;
+  const travel = knotsToNmPerSec(helo.speed) * simDt;
   helo.x += Math.cos(helo.heading) * travel;
   helo.y += Math.sin(helo.heading) * travel;
 
