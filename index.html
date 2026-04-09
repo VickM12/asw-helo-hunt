@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ASW Helo Hunt</title>
-  <link rel="stylesheet" href="styles.css?v=20260407-6">
+  <link rel="stylesheet" href="styles.css?v=20260409-3">
 </head>
 <body>
   <div class="shell">
@@ -77,6 +77,19 @@
           </div>
           <div class="control-notes">
             <p><strong>Fly:</strong> W/S speed, A/D turn. <strong>Space</strong> drop buoy. <strong>Enter</strong> declare. <strong>R</strong> restart.</p>
+            <p class="touch-hint">On touch screens, hold the fly pad below (same as W/A/S/D).</p>
+          </div>
+          <div class="fly-pad" id="flyPad" aria-label="Touch flight controls">
+            <div class="fly-pad-row">
+              <button type="button" class="fly-btn" data-keycode="KeyW" aria-label="Increase speed">W</button>
+            </div>
+            <div class="fly-pad-row fly-pad-mid">
+              <button type="button" class="fly-btn" data-keycode="KeyA" aria-label="Turn left">A</button>
+              <button type="button" class="fly-btn" data-keycode="KeyD" aria-label="Turn right">D</button>
+            </div>
+            <div class="fly-pad-row">
+              <button type="button" class="fly-btn" data-keycode="KeyS" aria-label="Decrease speed">S</button>
+            </div>
           </div>
         </section>
 
@@ -154,6 +167,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260407-4"></script>
+  <script src="app.js?v=20260409-1"></script>
 </body>
 </html>

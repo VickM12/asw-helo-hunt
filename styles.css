@@ -28,6 +28,8 @@ body {
 
 body {
   overflow-y: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(circle at top left, rgba(78, 133, 175, 0.18), transparent 30%),
     radial-gradient(circle at bottom right, rgba(10, 77, 95, 0.28), transparent 30%),
@@ -40,6 +42,9 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 24px;
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 
 .topbar {
@@ -164,10 +169,16 @@ h2 {
   font-size: 0.95rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-align: right;
+  flex-shrink: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 canvas {
   width: 100%;
+  max-width: 100%;
+  touch-action: none;
   border-radius: 18px;
   border: 1px solid rgba(127, 205, 255, 0.14);
   background:
@@ -185,15 +196,18 @@ canvas {
 }
 
 .ppi-wrap {
-  max-height: min(32vh, 300px);
+  max-height: min(40vh, 360px);
   display: flex;
   justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .ppi-wrap canvas {
-  width: auto;
-  height: 100%;
-  max-height: min(32vh, 300px);
+  width: min(100%, min(40vh, 360px));
+  height: auto;
+  max-height: min(40vh, 360px);
+  aspect-ratio: 1 / 1;
 }
 
 .legend {
@@ -287,6 +301,55 @@ canvas {
   color: var(--text);
 }
 
+.touch-hint {
+  display: none;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.fly-pad {
+  display: none;
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(5, 18, 27, 0.5);
+  border: 1px solid rgba(127, 205, 255, 0.1);
+  border-radius: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fly-pad-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fly-pad-mid {
+  margin: 6px 0;
+}
+
+.fly-btn {
+  appearance: none;
+  width: min(88px, 28vw);
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(127, 205, 255, 0.22);
+  background: rgba(14, 37, 52, 0.95);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.fly-btn:active {
+  background: rgba(22, 58, 78, 0.95);
+  border-color: rgba(124, 230, 212, 0.45);
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -368,11 +431,82 @@ canvas {
     min-width: 0;
     width: 100%;
   }
+
+  /* Pinned controls whenever the page is single-column — map stays visible above the dock */
+  .shell {
+    padding-bottom: calc(17rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .controls-panel {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: 0;
+    z-index: 40;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    padding-top: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+    overscroll-behavior: contain;
+  }
+
+  .controls-panel .control-notes {
+    display: none;
+  }
+
+  .controls-panel .controls-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .controls-panel .controls-grid .action {
+    min-height: 44px;
+    font-size: 0.72rem;
+    padding: 8px 4px;
+    line-height: 1.2;
+  }
+
+  .controls-panel .fly-pad {
+    margin-top: 8px;
+    padding: 6px 8px;
+  }
+
+  .controls-panel .fly-btn {
+    min-height: 44px;
+    width: min(76px, 24vw);
+    font-size: 0.95rem;
+  }
+
+  .controls-panel .fly-pad-mid {
+    margin: 4px 0;
+  }
+
+  .map-panel #mapCanvas {
+    max-height: 40svh;
+    width: min(100%, calc(40svh * 3 / 2));
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .touch-hint {
+    display: block;
+  }
+
+  .fly-pad {
+    display: block;
+  }
 }
 
 @media (max-width: 760px) {
   .shell {
-    padding: 16px;
+    padding: 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: calc(17rem + env(safe-area-inset-bottom, 0px));
   }
 
   .topbar {
@@ -380,9 +514,53 @@ canvas {
     flex-direction: column;
   }
 
-  .mission-strip,
-  .controls-grid,
-  .status-grid {
+  .topbar h1 {
+    font-size: clamp(1.35rem, 6vw, 2rem);
+  }
+
+  .mission-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-grid,
+  .status-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+  }
+
+  .panel-readout {
+    text-align: left;
+    width: 100%;
+    font-size: 0.82rem;
+  }
+
+  .legend {
+    font-size: 0.82rem;
+    gap: 8px 12px;
+  }
+
+  .message-board {
+    max-height: min(220px, 28vh);
+  }
+
+  .confidence-row strong {
+    white-space: normal;
+  }
+
+  .win-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .mission-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid-compact {
     grid-template-columns: 1fr;
   }
 }
@@ -393,6 +571,9 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(16, 60, 82, 0.55), transparent 60%),
     rgba(3, 10, 16, 0.92);

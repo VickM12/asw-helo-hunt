@@ -1106,6 +1106,9 @@ function showWinScreen(error) {
 
 function showStartScreen() {
   gameRunning = false;
+  if (state) {
+    state.keys.clear();
+  }
   startScreenEl.classList.remove("hidden");
   winScreenEl.classList.add("hidden");
 }
@@ -1118,6 +1121,54 @@ function startGame(difficultyKey) {
   resetGame();
   requestAnimationFrame(gameLoop);
 }
+
+function bindTouchFlightControls() {
+  document.querySelectorAll(".fly-btn").forEach((btn) => {
+    const code = btn.dataset.keycode;
+    if (!code) {
+      return;
+    }
+
+    const release = (e) => {
+      if (state) {
+        state.keys.delete(code);
+      }
+      if (e.pointerId != null) {
+        try {
+          btn.releasePointerCapture(e.pointerId);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    };
+
+    btn.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) {
+        return;
+      }
+      e.preventDefault();
+      if (!gameRunning || !state) {
+        return;
+      }
+      state.keys.add(code);
+      try {
+        btn.setPointerCapture(e.pointerId);
+      } catch (_) {
+        /* ignore */
+      }
+    });
+
+    btn.addEventListener("pointerup", release);
+    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("lostpointercapture", release);
+  });
+}
+
+window.addEventListener("blur", () => {
+  if (state) {
+    state.keys.clear();
+  }
+});
 
 document.addEventListener("keydown", handleKeyDown, true);
 window.addEventListener("keyup", handleKeyUp);
@@ -1138,4 +1189,5 @@ document.querySelectorAll(".difficulty-btn").forEach((btn) => {
   });
 });
 
+bindTouchFlightControls();
 resizeCanvases();
