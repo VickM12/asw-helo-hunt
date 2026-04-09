@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ASW Helo Hunt</title>
-  <link rel="stylesheet" href="styles.css?v=20260407-5">
+  <link rel="stylesheet" href="styles.css?v=20260407-6">
 </head>
 <body>
   <div class="shell">
@@ -120,6 +120,40 @@
     </main>
   </div>
 
-  <script src="app.js?v=20260407-3"></script>
+  <div class="overlay" id="startScreen">
+    <div class="overlay-card">
+      <p class="eyebrow">Littoral ASW Trainer</p>
+      <h1>ASW Helo Hunt</h1>
+      <p class="overlay-desc">A diesel-electric submarine is transiting your patrol area. Drop sonobuoys, build an acoustic track, and declare contact before it slips through.</p>
+      <div class="difficulty-pick">
+        <h2>Select Difficulty</h2>
+        <button class="action difficulty-btn" data-difficulty="easy">
+          <strong>Easy</strong>
+          <span>20 buoys &middot; guaranteed detection &middot; map shows all pings</span>
+        </button>
+        <button class="action difficulty-btn" data-difficulty="medium">
+          <strong>Medium</strong>
+          <span>14 buoys &middot; map shows all pings &middot; PPI requires datalink</span>
+        </button>
+        <button class="action difficulty-btn" data-difficulty="hard">
+          <strong>Hard</strong>
+          <span>10 buoys &middot; datalink required for all displays</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="winScreen">
+    <div class="overlay-card win-card">
+      <h1>Contact Confirmed</h1>
+      <p class="win-subtitle" id="winSubtitle"></p>
+      <div class="win-stats" id="winStats"></div>
+      <div class="win-actions">
+        <button class="action primary" id="winReplay">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20260407-4"></script>
 </body>
 </html>

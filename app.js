@@ -27,6 +27,11 @@ const actionReadoutEl = document.getElementById("actionReadout");
 const dropBuoyBtn = document.getElementById("dropBuoyBtn");
 const declareBtn = document.getElementById("declareBtn");
 const restartBtn = document.getElementById("restartBtn");
+const startScreenEl = document.getElementById("startScreen");
+const winScreenEl = document.getElementById("winScreen");
+const winSubtitleEl = document.getElementById("winSubtitle");
+const winStatsEl = document.getElementById("winStats");
+const winReplayBtn = document.getElementById("winReplay");
 
 const isEmbedded = new URLSearchParams(window.location.search).get('embedded') === 'true';
 
@@ -34,6 +39,29 @@ const WORLD = {
   width: 36,
   height: 24,
 };
+
+const DIFFICULTY = {
+  easy: {
+    label: "Easy",
+    buoyCount: 20,
+    guaranteedDetection: true,
+    mapPingRequiresLink: false,
+  },
+  medium: {
+    label: "Medium",
+    buoyCount: 14,
+    guaranteedDetection: true,
+    mapPingRequiresLink: false,
+  },
+  hard: {
+    label: "Hard",
+    buoyCount: 10,
+    guaranteedDetection: true,
+    mapPingRequiresLink: true,
+  },
+};
+
+let currentDifficulty = null;
 
 const CONFIG = {
   sim: {
@@ -56,6 +84,7 @@ const CONFIG = {
     linkRadius: 8,
     pingInterval: 6.2,
     guaranteedDetectionInBasket: true,
+    mapPingRequiresLink: false,
   },
   solution: {
     freshness: 55,
@@ -67,6 +96,14 @@ const CONFIG = {
   },
 };
 
+function applyDifficulty(key) {
+  const preset = DIFFICULTY[key];
+  currentDifficulty = preset;
+  CONFIG.buoy.count = preset.buoyCount;
+  CONFIG.buoy.guaranteedDetectionInBasket = preset.guaranteedDetection;
+  CONFIG.buoy.mapPingRequiresLink = preset.mapPingRequiresLink;
+}
+
 let state;
 
 function resetGame() {
@@ -75,6 +112,7 @@ function resetGame() {
 
   state = {
     time: 0,
+    realTime: 0,
     missionEnded: false,
     result: null,
     buoysRemaining: CONFIG.buoy.count,
@@ -96,10 +134,12 @@ function resetGame() {
     lastFrame: performance.now(),
   };
 
-  pushMessage("brief", "Mission start. A diesel-electric submarine is somewhere in the area. Lay an active buoy pattern and re-enter the field to collect returns.");
-  pushMessage("hint", "Only buoys within datalink range show on your sonar display. If you sprint too far from the pattern, you lose the acoustic picture.");
-  pushMessage("hint", "Training balance is on: the search box is tighter and buoy baskets are a bit more generous so you can build a track without a perfect barrier.");
-  pushMessage("hint", "Training acoustics are on: if the submarine is inside a buoy's basket, that buoy will return, and solution-fitting rings glow brighter.");
+  pushMessage("brief", `Mission start (${currentDifficulty.label}). A diesel-electric submarine is somewhere in the area. ${CONFIG.buoy.count} buoys loaded.`);
+  if (CONFIG.buoy.mapPingRequiresLink) {
+    pushMessage("hint", "Datalink required: only linked buoys show pings and returns on both the map and the PPI.");
+  } else {
+    pushMessage("hint", "The mission map shows all buoy pings and returns. The PPI only shows buoys within datalink range.");
+  }
   resizeCanvases();
   updateReadouts();
   render();
@@ -156,7 +196,12 @@ function resizeCanvas(canvas, baseWidth, baseHeight) {
   }
 }
 
+let gameRunning = false;
+
 function gameLoop(now) {
+  if (!gameRunning) {
+    return;
+  }
   const dt = Math.min((now - state.lastFrame) / 1000, 0.05);
   state.lastFrame = now;
   update(dt);
@@ -173,6 +218,7 @@ function update(dt) {
   const simDt = dt * CONFIG.sim.rate;
 
   state.time += simDt;
+  state.realTime += dt;
   updateHelo(dt, simDt);
   updateSub(simDt);
   updateBuoys(simDt);
@@ -457,7 +503,7 @@ function updateReadouts() {
   heloReadoutEl.textContent = `HDG ${formatHeading(state.helo.heading)} / ${Math.round(state.helo.speed)} kt`;
   rangeReadoutEl.textContent = `Link radius ${CONFIG.helo.linkRadius.toFixed(1)} nm`;
   positionReadoutEl.textContent = `${state.helo.x.toFixed(1)} E / ${state.helo.y.toFixed(1)} N`;
-  clockReadoutEl.textContent = formatClock(state.time);
+  clockReadoutEl.textContent = formatClock(state.realTime);
   simRateEl.textContent = `x${CONFIG.sim.rate}`;
   returnsReadoutEl.textContent = String(recentReturns);
   actionReadoutEl.textContent = state.lastAction;
@@ -551,7 +597,8 @@ function drawMap() {
     ctx.arc(px, py, buoy.sonarRadius * scaleX, 0, Math.PI * 2);
     ctx.stroke();
 
-    if (buoy.lastReturn && state.time - buoy.lastReturn.time <= CONFIG.solution.freshness) {
+    const showReturn = buoy.lastReturn && state.time - buoy.lastReturn.time <= CONFIG.solution.freshness;
+    if (showReturn && (!CONFIG.buoy.mapPingRequiresLink || buoy.linked)) {
       ctx.strokeStyle = buoy.solutionContributor ? "rgba(246, 185, 95, 0.78)" : "rgba(246, 185, 95, 0.34)";
       ctx.lineWidth = buoy.solutionContributor ? 2.8 : 1.8;
       ctx.setLineDash([8, 8]);
@@ -605,6 +652,11 @@ function drawTrackTrail(ctx, scaleX, scaleY) {
 
 function drawPingEffects(ctx, scaleX, scaleY) {
   for (const ping of state.pingAnimations) {
+    const buoy = state.buoys.find((b) => b.id === ping.buoyId);
+    if (CONFIG.buoy.mapPingRequiresLink && (!buoy || !buoy.linked)) {
+      continue;
+    }
+
     const elapsed = state.time - ping.startTime;
     const radius = elapsed * CONFIG.physics.soundSpeedNmPerSec;
     const px = ping.x * scaleX;
@@ -893,6 +945,7 @@ function declareContact() {
     state.lastAction = "Contact declared";
     pushMessage("success", `Contact declared. Error ${error.toFixed(2)} nm. Datum confirmed and submarine revealed on the plot.`);
     updateReadouts();
+    showWinScreen(error);
   } else if (!confidentEnough && withinRange) {
     const pct = (state.estimate.confidence * 100).toFixed(0);
     const need = Math.round(CONFIG.solution.minDeclareConfidence * 100);
@@ -1008,7 +1061,7 @@ function makeId() {
 }
 
 function handleKeyDown(event) {
-  if (event.repeat) {
+  if (event.repeat || !gameRunning) {
     return;
   }
 
@@ -1023,7 +1076,7 @@ function handleKeyDown(event) {
     return;
   }
   if (event.key === "r" || event.key === "R" || event.code === "KeyR") {
-    resetGame();
+    showStartScreen();
     return;
   }
   if (state) {
@@ -1038,13 +1091,51 @@ function handleKeyUp(event) {
   state.keys.delete(event.code);
 }
 
+function showWinScreen(error) {
+  const time = formatClock(state.realTime);
+  const buoysUsed = CONFIG.buoy.count - state.buoysRemaining;
+
+  winSubtitleEl.textContent = `Submarine localized on ${currentDifficulty.label} difficulty.`;
+  winStatsEl.innerHTML = `
+    <div class="win-stat"><span>Mission Time</span><strong>${time}</strong></div>
+    <div class="win-stat"><span>Buoys Used</span><strong>${buoysUsed} / ${CONFIG.buoy.count}</strong></div>
+    <div class="win-stat"><span>Accuracy</span><strong>${error.toFixed(2)} nm</strong></div>
+  `;
+  winScreenEl.classList.remove("hidden");
+}
+
+function showStartScreen() {
+  gameRunning = false;
+  startScreenEl.classList.remove("hidden");
+  winScreenEl.classList.add("hidden");
+}
+
+function startGame(difficultyKey) {
+  applyDifficulty(difficultyKey);
+  startScreenEl.classList.add("hidden");
+  winScreenEl.classList.add("hidden");
+  gameRunning = true;
+  resetGame();
+  requestAnimationFrame(gameLoop);
+}
+
 document.addEventListener("keydown", handleKeyDown, true);
 window.addEventListener("keyup", handleKeyUp);
 
 window.addEventListener("resize", resizeCanvases);
 dropBuoyBtn.addEventListener("click", dropBuoy);
 declareBtn.addEventListener("click", declareContact);
-restartBtn.addEventListener("click", resetGame);
+restartBtn.addEventListener("click", () => {
+  showStartScreen();
+});
+winReplayBtn.addEventListener("click", () => {
+  showStartScreen();
+});
 
-resetGame();
-requestAnimationFrame(gameLoop);
+document.querySelectorAll(".difficulty-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    startGame(btn.dataset.difficulty);
+  });
+});
+
+resizeCanvases();

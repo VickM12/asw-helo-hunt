@@ -386,6 +386,121 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(16, 60, 82, 0.55), transparent 60%),
+    rgba(3, 10, 16, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  max-width: 520px;
+  width: 90vw;
+  text-align: center;
+}
+
+.overlay-card h1 {
+  margin-bottom: 14px;
+}
+
+.overlay-desc {
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 1rem;
+  margin-bottom: 28px;
+}
+
+.difficulty-pick {
+  display: grid;
+  gap: 12px;
+}
+
+.difficulty-pick h2 {
+  margin-bottom: 4px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--bright);
+}
+
+.difficulty-btn {
+  text-align: left;
+  padding: 14px 18px;
+}
+
+.difficulty-btn strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+
+.difficulty-btn span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.win-card {
+  text-align: center;
+}
+
+.win-card h1 {
+  color: var(--bright);
+  margin-bottom: 8px;
+}
+
+.win-subtitle {
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin-bottom: 22px;
+}
+
+.win-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.win-stat {
+  padding: 12px 10px;
+  background: rgba(8, 26, 38, 0.76);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+}
+
+.win-stat span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.win-stat strong {
+  font-size: 1.2rem;
+}
+
+.win-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.win-actions .action {
+  min-width: 160px;
+  padding: 14px 24px;
+  font-size: 1rem;
+}
+
 /* Embedded mode: single column layout */
 body.embedded .layout {
   flex-direction: column;
